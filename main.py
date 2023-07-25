@@ -7,7 +7,7 @@ from langchain.prompts import (
     ChatPromptTemplate,
     MessagesPlaceholder
 )
-import streamlit as st
+
 import openai
 from streamlit_chat import message
 from utils import *
@@ -24,7 +24,8 @@ secrets = st.secrets['secrets']
 OPENAI_API_KEY = secrets['OPENAI_API_KEY']
 PINECONE_API_KEY = secrets['PINECONE_API_KEY']
 
-
+st.write("Clave de API de OpenAI:", OPENAI_API_KEY)
+st.write("Otra variable:", PINECONE_API_KEY)
 class Document:
     def __init__(self, page_content, metadata):
         self.page_content = page_content
