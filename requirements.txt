@@ -6,3 +6,4 @@ pinecone-client
 torch
 transformers
 openai
+python-dotenv
