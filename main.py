@@ -16,11 +16,13 @@ from utils import *
 from dotenv import load_dotenv
 import os
 
-load_dotenv()  # Carga las variables de entorno desde .env
 
-OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
-PINECONE_API_KEY = os.environ.get('PINECONE_API_KEY')
+import streamlit as st
 
+# Define las variables de entorno y otros secrets
+secrets = st.secrets['secrets']
+OPENAI_API_KEY = secrets['OPENAI_API_KEY']
+PINECONE_API_KEY = secrets['PINECONE_API_KEY']
 
 
 class Document:
