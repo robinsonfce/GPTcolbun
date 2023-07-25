@@ -8,6 +8,7 @@ from langchain.prompts import (
     MessagesPlaceholder
 )
 import streamlit as st
+import openai
 from streamlit_chat import message
 from utils import *
 
