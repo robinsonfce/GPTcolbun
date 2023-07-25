@@ -12,11 +12,10 @@ from langchain.prompts import PromptTemplate
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
-
-OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
-PINECONE_API_KEY = os.environ.get('PINECONE_API_KEY')
-
+# Define las variables de entorno y otros secrets
+secrets = st.secrets['secrets']
+OPENAI_API_KEY = secrets['OPENAI_API_KEY']
+PINECONE_API_KEY = secrets['PINECONE_API_KEY']
 #--------------------------------------------------------
 
 model_name = "text-embedding-ada-002"
