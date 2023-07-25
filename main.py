@@ -20,9 +20,9 @@ import os
 import streamlit as st
 
 # Define las variables de entorno y otros secrets
-secrets = st.secrets['secrets']
-OPENAI_API_KEY = secrets['OPENAI_API_KEY']
-PINECONE_API_KEY = secrets['PINECONE_API_KEY']
+
+OPENAI_API_KEY = st.secrets['OPENAI_API_KEY']
+PINECONE_API_KEY = st.secrets['PINECONE_API_KEY']
 
 st.write("Clave de API de OpenAI:", OPENAI_API_KEY)
 st.write("Otra variable:", PINECONE_API_KEY)
