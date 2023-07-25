@@ -13,9 +13,8 @@ import os
 from dotenv import load_dotenv
 
 # Define las variables de entorno y otros secrets
-secrets = st.secrets['secrets']
-OPENAI_API_KEY = secrets['OPENAI_API_KEY']
-PINECONE_API_KEY = secrets['PINECONE_API_KEY']
+OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
+PINECONE_API_KEY = st.secrets["PINECONE_API_KEY"]
 #--------------------------------------------------------
 
 model_name = "text-embedding-ada-002"
