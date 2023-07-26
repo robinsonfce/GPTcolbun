@@ -45,10 +45,13 @@ st.markdown(
 st.markdown("<h6 style='text-align: center;'>Creado por: Robinson Cornejo</h6>", unsafe_allow_html=True)
 
 
-
+if 'responses' not in st.session_state:
+    st.session_state['responses'] = ["En que puedo ayudarte hoy"]
 
 if 'requests' not in st.session_state:
     st.session_state['requests'] = []
+
+
 
 llm = ChatOpenAI(model_name="gpt-3.5-turbo", openai_api_key=OPENAI_API_KEY)
 
