@@ -1,35 +1,27 @@
-import pinecone
+# Importaciones de servicios y bibliotecas
+import json
+import os
 import openai
+import pinecone
 import streamlit as st
-
-from langchain.chains.question_answering import load_qa_chain
+from dotenv import load_dotenv
+from langchain.chains.qa_with_sources import load_qa_with_sources_chain
 from langchain.llms import OpenAI
 from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.chains.qa_with_sources import load_qa_with_sources_chain
 from langchain.prompts import PromptTemplate
 
+# Configuración y constantes globales
+load_dotenv()
 
-import os
-from dotenv import load_dotenv
-
-# Define las variables de entorno y otros secrets
 OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
 PINECONE_API_KEY = st.secrets["PINECONE_API_KEY"]
-#--------------------------------------------------------
 
-model_name = "text-embedding-ada-002"
+MODEL_NAME = "text-embedding-ada-002"
+pinecone.init(api_key=PINECONE_API_KEY, environment='us-west4-gcp')
+INDEX_PINECONE = pinecone.Index(index_name='codegpt')
+EMBEDDINGS = OpenAIEmbeddings()
 
-pinecone.init(      
-	api_key=PINECONE_API_KEY,      
-	environment='us-west4-gcp'      
-)      
-index = pinecone.Index('codegpt')
-index_pinecone_index          = pinecone.Index(index_name='codegpt')
-embeddings = OpenAIEmbeddings()
-#--------------------------------------------------------
-
-
-
+# Clase para representar un documento
 class Document:
     def __init__(self, page_content, metadata):
         self.page_content = page_content
@@ -40,6 +32,7 @@ class Document:
 
     __str__ = __repr__
 
+# Función para transformar un diccionario en un Document
 def transform_dict_to_document(dict_list):
     document_list = []
     
@@ -63,8 +56,8 @@ def transform_dict_to_document(dict_list):
 
 def get_similiar_docs_pinecone(query,k=10,score=False):
   import json
-  query_embedding= embeddings.embed_query(query)
-  result_query = index_pinecone_index.query(query_embedding, top_k=k, include_metadata=True)
+  query_embedding= EMBEDDINGS.embed_query(query)
+  result_query = INDEX_PINECONE.query(query_embedding, top_k=k, include_metadata=True)
   result_query_json=json.dumps(result_query.to_dict())
 
   def json_to_list(json_string):
@@ -81,85 +74,22 @@ def get_similiar_docs_pinecone(query,k=10,score=False):
 
   return similar_docs
 
-##llm = OpenAI(model_name=model_name)
-##chain = load_qa_chain(llm, chain_type="stuff")
 
 
-initial_template = """
-Eres un experto en normativas eléctricas, creado por Robinson Cornejo Evans
-No debes repetir la pregunta en tus respuestas.
-Responde de la forma más amable y con la mayor cantidad de información posible.
-Si no conoces la respuesta, aconseja al usuario que te de mas detalles sobre su consulta
-Siempre explica tus fuentes (al final de tu respuesta)
-Además, al recibir un documento, deberás:
-1. Analizar y comprender el documento proporcionado relacionado con normativas eléctricas.
-2. Identificar las partes más relevantes, incluyendo diseño, instalación, mantenimiento, componentes, normativas aplicables y recomendaciones. Cita el documento y la página o sección de donde se obtuvo cada dato.
-3. Elaborar un resumen técnico claro y conciso, utilizando un lenguaje técnico adecuado al contexto de normativas eléctricas.
-4. Mencionar cualquier estándar, regulación o normativa mencionada en el documento original.
-5. Evitar incluir opiniones, suposiciones o información no verificada del documento original.
-6. El resumen debe ser comprendido por profesionales en el campo de la electricidad, pero también ser accesible para personas con un conocimiento básico en el área.
-7. Limita el resumen a un máximo de 5 parrafos, enfocándote en los puntos clave. Salvo que el usuario que pida algo diferente.
-QUESTION: {question}
-=========
-{summaries}
-=========
-"""
-
-
-PROMPT = PromptTemplate(template=initial_template, input_variables=["summaries", "question"])
-
-
-llm = OpenAI(temperature=0.3, model_name="gpt-4", max_tokens=2048)
-qa = load_qa_with_sources_chain(llm=llm, chain_type="stuff", prompt=PROMPT)
-
-"""
-def get_answer(query):
-  similar_docs = get_similiar_docs_pinecone(query)
-  print(similar_docs)
-  print('------')
-  #answer = chain.run(input_documents=similar_docs, question=query)
-  answer =  qa({"input_documents": similar_docs, "question": query}, return_only_outputs=True)
-  return answer
-
-"""
-
-
-def get_answer(query):
-  similar_docs = get_similiar_docs_pinecone(query)
-  print(similar_docs)
-  print('------')
-  answer =  qa({"input_documents": similar_docs, "question": query}, return_only_outputs=True)
-  return answer
-
-
+# Función para refinar una consulta dada una conversación anterior
 def query_refiner(conversation, query):
-
     response = openai.Completion.create(
-    model="text-davinci-003",
-    prompt=f"Dada la consulta del usuario y el historial de la conversación, tu objetivo es formular una pregunta más refinada y específica centrada en el área de normativas eléctricas. Esta pregunta refinada debe ayudarte a obtener la información más relevante de la base de conocimientos para responder de la mejor manera posible. La consulta refinada debe estar en forma de pregunta y no exceder de 2 oraciones.\n\nCONVERSATION LOG: \n{conversation}\n\nQuery: {query}\n\nRefined Query:",
-    temperature=0.3,
-    max_tokens=512,
-    top_p=1,
-    frequency_penalty=0,
-    presence_penalty=0
+        model="text-davinci-003",
+        prompt=f"Dada la consulta del usuario y el historial de la conversación, tu objetivo es formular una pregunta más refinada y específica centrada en el área de normativas eléctricas. Esta pregunta refinada debe ayudarte a obtener la información más relevante de la base de conocimientos para responder de la mejor manera posible. La consulta refinada debe estar en forma de pregunta y no exceder de 2 oraciones.\n\nCONVERSATION LOG: \n{conversation}\n\nQuery: {query}\n\nRefined Query:",
+    	temperature=0.3,
+        max_tokens=512,
+        top_p=1,
+        frequency_penalty=0,
+        presence_penalty=0
     )
     return response['choices'][0]['text']
 
-"""
-def query_refiner(conversation, query):
-    user_entities = extract_entities(query)
-    refined_query = query + " " + " ".join(user_entities)
-    response = openai.Completion.create(
-    model="text-davinci-003",
-    prompt=f"Dada la consulta del usuario, las entidades identificadas y el historial de la conversación, tu objetivo es formular una pregunta más refinada y específica que te permita obtener la información más relevante de la base de conocimientos para responder de la mejor manera posible.\n\nCONVERSATION LOG: \n{conversation}\n\nQuery: {refined_query}\n\nRefined Query:",
-    temperature=0.5,
-    max_tokens=512,
-    top_p=1,
-    frequency_penalty=0,
-    presence_penalty=0
-    )
-    return response['choices'][0]['text']
-"""
+# Función para obtener el historial de conversación
 def get_conversation_string():
     conversation_string = ""
     for i in range(len(st.session_state['responses'])-1):
@@ -167,4 +97,105 @@ def get_conversation_string():
         conversation_string += "Human: "+st.session_state['requests'][i] + "\n"
         conversation_string += "Bot: "+ st.session_state['responses'][i+1] + "\n"
     return conversation_string
+
+import re
+
+def is_query_vague(query):
+    """
+    Verifica si la consulta del usuario es vaga.
+    Considera palabras clave específicas y patrones generales.
+    """
+    # Palabras clave que sugieren vaguedad
+    vague_keywords = {"cómo", "qué", "explica", "dime", "información", "cuéntame", "describe", "por qué"}
+    
+    # Patrones vagos
+    vague_patterns = [
+        r"\bqué es\b",                  # "qué es [algo]"
+        r"\bexplica\w* \b\w+\b",        # "explica [algo]"
+        r"\bdime más sobre\b",          # "dime más sobre [algo]"
+        r"\bcómo funciona\b",           # "cómo funciona [algo]"
+    ]
+    
+    # Verificar si alguna palabra clave está presente en la consulta
+    if any(keyword in query.split() for keyword in vague_keywords):
+        return True
+    
+    # Verificar patrones vagos
+    for pattern in vague_patterns:
+        if re.search(pattern, query, re.IGNORECASE):
+            return True
+    
+    return False
+
+# Función para obtener una respuesta a una consulta
+def get_answer(query):
+    similar_docs = get_similiar_docs_pinecone(query)
+    print(similar_docs)
+    print('------')
+    answer = QA({"input_documents": similar_docs, "question": query}, return_only_outputs=True)
+    return answer
+
+def generate_query_options(query):
+    """
+    Genera opciones más específicas basadas en una consulta vaga usando un modelo de lenguaje.
+    """
+    prompt = f"La consulta '{query}' es un poco vaga. ¿Podrías estar refiriéndote a alguna de las siguientes opciones?"
+    response = openai.Completion.create(
+        model="gpt-4",
+        prompt=prompt,
+        max_tokens=100,
+        n=3  # Número de opciones que quieres generar
+    )
+    
+    # Extraer las opciones del modelo
+    options = [choice['text'].strip() for choice in response['choices']]
+    return options
+
+def handle_vague_query(query):
+    """
+    Maneja consultas vagas proporcionando opciones inferidas basadas en el contexto.
+    """
+    options = generate_query_options(query)
+    st.write(f"Tu pregunta '{query}' parece un poco vaga. ¿Te refieres a alguna de las siguientes opciones?")
+    for idx, option in enumerate(options, 1):
+        st.write(f"{idx}. {option}")
+    
+    # Aquí podrías recoger la elección del usuario y procesarla en consecuencia
+    choice = st.selectbox("Selecciona una opción:", options)
+    if choice:
+        refined_query = query_refiner(get_conversation_string(), choice)
+        answer = get_answer(refined_query)
+        st.write(answer)
+
+# Plantilla de aviso inicial
+
+INITIAL_TEMPLATE = """
+Eres un especialista en normativas eléctricas actuando en representación de Robinson Cornejo Evans, Instalador Electricista Clase A.
+
+No repitas la pregunta en tus respuestas.
+Brinda respuestas amables, detalladas e informativas.
+Si desconoces algo, sugiere al usuario que te consulte directamente.
+Siempre cita tus fuentes, especificando el documento y la sección o página correspondiente.
+Al recibir un documento, actúa de la siguiente manera:
+
+Analiza y entiende el contenido relacionado con normativas eléctricas.
+Destaca aspectos cruciales como diseño, instalación, mantenimiento, componentes, normativas y recomendaciones.
+Elabora un resumen técnico claro, conciso y con el lenguaje técnico pertinente. Asegúrate de citar la fuente y la ubicación exacta de cada dato.
+Indica todos los estándares, regulaciones o normativas mencionadas en el documento original.
+Abstente de incluir opiniones, suposiciones o información no verificada.
+Tu resumen debe ser comprensible tanto para profesionales eléctricos como para aquellos con conocimientos básicos en el área, siempre poniendo énfasis en los puntos clave.
+
+QUESTION: {question}
+=========
+{summaries}
+=========
+"""
+
+
+PROMPT = PromptTemplate(template=INITIAL_TEMPLATE, input_variables=["summaries", "question"])
+
+LLM = OpenAI(temperature=0.3, model_name="gpt-4", max_tokens=2048)
+QA = load_qa_with_sources_chain(llm=LLM, chain_type="stuff", prompt=PROMPT)
+
+
 
