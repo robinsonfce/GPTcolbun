@@ -24,7 +24,6 @@ pinecone.init(
 	environment='us-west4-gcp'      
 )      
 index = pinecone.Index('codegpt')
-index_pinecone_index          = pinecone.Index(index_name='codegpt')
 embeddings = OpenAIEmbeddings()
 #--------------------------------------------------------
 
