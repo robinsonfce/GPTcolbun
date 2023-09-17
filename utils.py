@@ -63,7 +63,7 @@ def transform_dict_to_document(dict_list):
 def get_similiar_docs_pinecone(query,k=10,score=False):
   import json
   query_embedding= embeddings.embed_query(query)
-  result_query = index_pinecone_index.query(query_embedding, top_k=k, include_metadata=True)
+  result_query = index.query(query_embedding, top_k=k, include_metadata=True)
   result_query_json=json.dumps(result_query.to_dict())
 
   def json_to_list(json_string):
