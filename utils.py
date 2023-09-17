@@ -23,8 +23,8 @@ pinecone.init(
 	api_key=PINECONE_API_KEY,      
 	environment='us-west4-gcp'      
 )      
-index = pinecone.Index('ric')
-index_pinecone_index          = pinecone.Index(index_name='ric')
+index = pinecone.Index('codegpt')
+index_pinecone_index          = pinecone.Index(index_name='codegpt')
 embeddings = OpenAIEmbeddings()
 #--------------------------------------------------------
 
@@ -86,23 +86,30 @@ def get_similiar_docs_pinecone(query,k=10,score=False):
 
 
 initial_template = """
-You are an expert in occupational safety and protocols and you represent the company Colbun S.A.
-You should not repeat the question in your answers.
-Respond in the kindest way and with as much information as possible.
-If you do not know the answer, advise the user to consult their boss or a MASSO advisor.
-always explain your sources
+Eres un experto en normativas eléctricas, creado por Robinson Cornejo Evans
+No debes repetir la pregunta en tus respuestas.
+Responde de la forma más amable y con la mayor cantidad de información posible.
+Si no conoces la respuesta, aconseja al usuario que te de mas detalles sobre su consulta
+Siempre explica tus fuentes (al final de tu respuesta)
+Además, al recibir un documento, deberás:
+1. Analizar y comprender el documento proporcionado relacionado con normativas eléctricas.
+2. Identificar las partes más relevantes, incluyendo diseño, instalación, mantenimiento, componentes, normativas aplicables y recomendaciones. Cita el documento y la página o sección de donde se obtuvo cada dato.
+3. Elaborar un resumen técnico claro y conciso, utilizando un lenguaje técnico adecuado al contexto de normativas eléctricas.
+4. Mencionar cualquier estándar, regulación o normativa mencionada en el documento original.
+5. Evitar incluir opiniones, suposiciones o información no verificada del documento original.
+6. El resumen debe ser comprendido por profesionales en el campo de la electricidad, pero también ser accesible para personas con un conocimiento básico en el área.
+7. Limita el resumen a un máximo de 5 parrafos, enfocándote en los puntos clave. Salvo que el usuario que pida algo diferente.
 QUESTION: {question}
 =========
 {summaries}
 =========
-
 """
 
 
 PROMPT = PromptTemplate(template=initial_template, input_variables=["summaries", "question"])
 
 
-llm = OpenAI(temperature=0.3, model_name="gpt-3.5-turbo-0301", max_tokens=512)
+llm = OpenAI(temperature=0.3, model_name="gpt-4", max_tokens=2048)
 qa = load_qa_with_sources_chain(llm=llm, chain_type="stuff", prompt=PROMPT)
 
 """
@@ -129,8 +136,8 @@ def query_refiner(conversation, query):
 
     response = openai.Completion.create(
     model="text-davinci-003",
-    prompt=f"Dada la consulta del usuario y el historial de la conversación, tu objetivo es formular una pregunta más refinada y específica que te permita obtener la información más relevante de la base de conocimientos para responder de la mejor manera posible.\n\nCONVERSATION LOG: \n{conversation}\n\nQuery: {query}\n\nRefined Query:",
-    temperature=0.5,
+    prompt=f"Dada la consulta del usuario y el historial de la conversación, tu objetivo es formular una pregunta más refinada y específica centrada en el área de normativas eléctricas. Esta pregunta refinada debe ayudarte a obtener la información más relevante de la base de conocimientos para responder de la mejor manera posible. La consulta refinada debe estar en forma de pregunta y no exceder de 2 oraciones.\n\nCONVERSATION LOG: \n{conversation}\n\nQuery: {query}\n\nRefined Query:",
+    temperature=0.3,
     max_tokens=512,
     top_p=1,
     frequency_penalty=0,
