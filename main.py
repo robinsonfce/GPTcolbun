@@ -28,21 +28,24 @@ with col1:
     )
 
 with col2:
-    st.markdown("<h6 style='text-align: left;'>Creado por: Robinson Cornejo, Instalador Electrico Clase A </h6>", unsafe_allow_html=True)
+    st.markdown("<h6 style='text-align: left;'>Diseñado por <strong>Robinson Cornejo</strong>, Ingeniero Electricista.</h6>", unsafe_allow_html=True)
+    st.markdown("<h6 style='text-align: left;'>Apasionado por la innovación tecnológica y el poder de los datos.</h6>", unsafe_allow_html=True)
+    st.markdown("<h6 style='text-align: left;'><strong>¿Te gusto este proyecto?</strong> ¡Déjame tus comentarios!</h6>", unsafe_allow_html=True)
     st.markdown(
-    """
-    <h6 style='text-align: left;'>
-        <a href="https://www.linkedin.com/in/robinsonfce/" target="_blank">LinkedIn</a> | 
-        <a href="mailto:robinson.fce@gmail.com">Correo</a>
-    </h6>
-    """, 
-    unsafe_allow_html=True
-)
+        """
+        <h6 style='text-align: left;'>
+            <a href="https://www.linkedin.com/in/robinsonfce/" target="_blank">LinkedIn</a> | 
+            <a href="mailto:robinson.fce@gmail.com">Correo: robinson.fce@gmail.com</a>
+        </h6>
+        """, 
+        unsafe_allow_html=True
+    )
+
 
 # Inicialización de mensajes
 if "messages" not in st.session_state.keys():
     st.session_state.messages = [
-        {"role": "assistant", "content": "En qué puedo ayudarte, explicame tu pregunta con detalle"}
+        {"role": "assistant", "content": "Bienvenido. Soy un asistente digital diseñado para guiarlo a través de pliegos RIC. ¿Qué información o ayuda necesitas?"}
     ]
 
 @st.cache_data(show_spinner=False)
@@ -68,24 +71,37 @@ for message in last_messages:
 if st.session_state.messages[-1]["role"] != "assistant":
     with st.chat_message("assistant"):
         with st.spinner("Pensando..."):
-            conversation_string = " ".join([msg['content'] for msg in last_messages])  # Utiliza solo los últimos mensajes para el contexto
+            conversation_string = " ".join([msg['content'] for msg in last_messages])  
             refined_query = query_refiner(conversation_string, prompt)
 
-            @st.cache_data(show_spinner=False)
             def get_response(query):
                 return get_answer(query)
-
+            
             initial_response = get_response(refined_query)
             initial_response_content = initial_response["output_text"]
             
             # Usar la historia, el prompt, y un template para refinar con GPT-3.5-Turbo
             def refiner_answer(context, prompt, initial_answer):
-                # Esto es un ejemplo de template, pero puedes modificarlo según tus necesidades.
-                template = f"El usuario consultó: \"{prompt}\". En base a los documentos similares, la respuesta inicial es: \"{initial_answer}\". Pero, ¿cuál es la mejor manera de responder a la consulta del usuario teniendo en cuenta el contexto de la conversación?"
+                template = f"A la consulta: \"{prompt}\"; y en base a los documentos referenciados con la pregunta inicial: \"{initial_answer}\". Responder la consulta, sin dar respuestas fuera del contexto"
                 full_query = context + " " + template
-                response = chat_engine.get_response(full_query)  # Asumiendo que 'chat_engine' tiene un método 'get_response' que funciona con GPT-3.5-Turbo.
-                return response['choices'][0]['text'].strip()  # Puede ser necesario ajustar esta línea según la estructura exacta de la respuesta de GPT-3.5-Turbo.
-            
+                #return response['choices'][0]['text'].strip()
+                system_msg='Eres un Ingeniero Eléctrico experto en normativas y estándares eléctricos. Tu tarea es proporcionar respuestas detalladas, precisas y con referencias claras a las fuentes, sin repetir la pregunta en tus respuestas.'
+
+                # Define the user message
+                user_msg = full_query
+                # Create a dataset using GPT
+                response = openai.ChatCompletion.create(model="gpt-3.5-turbo", temperature=0.3,
+                                                        messages=[{"role": "system", "content": system_msg},
+                                                                  {"role": "user", "content": user_msg}])  
+                refined_answer = response["choices"][0]["message"]["content"].strip()
+                # Si la respuesta es que no tiene información suficiente, sugiere que te consulte directamente
+                if "no tengo suficiente información" in refined_answer.lower():
+                    refined_answer = "Lo siento, no tengo suficiente información sobre eso. Por favor, dame mas detalles."
+                
+                return refined_answer
+
+        
+                
             refined_response = refiner_answer(conversation_string, prompt, initial_response_content)
             
             st.write(refined_response)
