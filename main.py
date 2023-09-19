@@ -62,19 +62,32 @@ for message in last_messages:
     with st.chat_message(message["role"]):
         st.write(message["content"])
 
+# ... [Todo el código previo que has dado]
+
 # Si el último mensaje no es del asistente, genera una nueva respuesta
 if st.session_state.messages[-1]["role"] != "assistant":
     with st.chat_message("assistant"):
         with st.spinner("Pensando..."):
             conversation_string = " ".join([msg['content'] for msg in last_messages])  # Utiliza solo los últimos mensajes para el contexto
             refined_query = query_refiner(conversation_string, prompt)
-            
+
             @st.cache_data(show_spinner=False)
             def get_response(query):
                 return get_answer(query)
 
-            response = get_response(refined_query)
-            response_content = response["output_text"]
-            st.write(response_content)
-            message = {"role": "assistant", "content": response_content}
+            initial_response = get_response(refined_query)
+            initial_response_content = initial_response["output_text"]
+            
+            # Usar la historia, el prompt, y un template para refinar con GPT-3.5-Turbo
+            def refiner_answer(context, prompt, initial_answer):
+                # Esto es un ejemplo de template, pero puedes modificarlo según tus necesidades.
+                template = f"El usuario consultó: \"{prompt}\". En base a los documentos similares, la respuesta inicial es: \"{initial_answer}\". Pero, ¿cuál es la mejor manera de responder a la consulta del usuario teniendo en cuenta el contexto de la conversación?"
+                full_query = context + " " + template
+                response = chat_engine.get_response(full_query)  # Asumiendo que 'chat_engine' tiene un método 'get_response' que funciona con GPT-3.5-Turbo.
+                return response['choices'][0]['text'].strip()  # Puede ser necesario ajustar esta línea según la estructura exacta de la respuesta de GPT-3.5-Turbo.
+            
+            refined_response = refiner_answer(conversation_string, prompt, initial_response_content)
+            
+            st.write(refined_response)
+            message = {"role": "assistant", "content": refined_response}
             st.session_state.messages.append(message)
