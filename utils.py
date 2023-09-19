@@ -54,7 +54,7 @@ def transform_dict_to_document(dict_list):
 
   
 
-def get_similiar_docs_pinecone(query,k=10,score=False):
+def get_similiar_docs_pinecone(query,k=3,score=False):
   import json
   query_embedding= EMBEDDINGS.embed_query(query)
   result_query = INDEX_PINECONE.query(query_embedding, top_k=k, include_metadata=True)
@@ -81,11 +81,11 @@ def query_refiner(conversation, query):
     response = openai.Completion.create(
         model="text-davinci-003",
         prompt=f"Dada la consulta del usuario y el historial de la conversación, tu objetivo es formular una pregunta más refinada y específica centrada en el área de normativas eléctricas. Esta pregunta refinada debe ayudarte a obtener la información más relevante de la base de conocimientos para responder de la mejor manera posible. La consulta refinada debe estar en forma de pregunta y no exceder de 2 oraciones.\n\nCONVERSATION LOG: \n{conversation}\n\nQuery: {query}\n\nRefined Query:",
-    	temperature=0.3,
+    	temperature=0.2,
         max_tokens=512,
-        top_p=1,
-        frequency_penalty=0,
-        presence_penalty=0
+        top_p=0.75,
+        frequency_penalty=0.5,
+        presence_penalty=0.5
     )
     return response['choices'][0]['text']
 
@@ -98,35 +98,6 @@ def get_conversation_string():
         conversation_string += "Bot: "+ st.session_state['responses'][i+1] + "\n"
     return conversation_string
 
-import re
-
-def is_query_vague(query):
-    """
-    Verifica si la consulta del usuario es vaga.
-    Considera palabras clave específicas y patrones generales.
-    """
-    # Palabras clave que sugieren vaguedad
-    vague_keywords = {"cómo", "qué", "explica", "dime", "información", "cuéntame", "describe", "por qué"}
-    
-    # Patrones vagos
-    vague_patterns = [
-        r"\bqué es\b",                  # "qué es [algo]"
-        r"\bexplica\w* \b\w+\b",        # "explica [algo]"
-        r"\bdime más sobre\b",          # "dime más sobre [algo]"
-        r"\bcómo funciona\b",           # "cómo funciona [algo]"
-    ]
-    
-    # Verificar si alguna palabra clave está presente en la consulta
-    if any(keyword in query.split() for keyword in vague_keywords):
-        return True
-    
-    # Verificar patrones vagos
-    for pattern in vague_patterns:
-        if re.search(pattern, query, re.IGNORECASE):
-            return True
-    
-    return False
-
 # Función para obtener una respuesta a una consulta
 def get_answer(query):
     similar_docs = get_similiar_docs_pinecone(query)
@@ -135,37 +106,9 @@ def get_answer(query):
     answer = QA({"input_documents": similar_docs, "question": query}, return_only_outputs=True)
     return answer
 
-def generate_query_options(query):
-    """
-    Genera opciones más específicas basadas en una consulta vaga usando un modelo de lenguaje.
-    """
-    prompt = f"La consulta '{query}' es un poco vaga. ¿Podrías estar refiriéndote a alguna de las siguientes opciones?"
-    response = openai.Completion.create(
-        model="gpt-4",
-        prompt=prompt,
-        max_tokens=100,
-        n=3  # Número de opciones que quieres generar
-    )
-    
-    # Extraer las opciones del modelo
-    options = [choice['text'].strip() for choice in response['choices']]
-    return options
 
-def handle_vague_query(query):
-    """
-    Maneja consultas vagas proporcionando opciones inferidas basadas en el contexto.
-    """
-    options = generate_query_options(query)
-    st.write(f"Tu pregunta '{query}' parece un poco vaga. ¿Te refieres a alguna de las siguientes opciones?")
-    for idx, option in enumerate(options, 1):
-        st.write(f"{idx}. {option}")
-    
-    # Aquí podrías recoger la elección del usuario y procesarla en consecuencia
-    choice = st.selectbox("Selecciona una opción:", options)
-    if choice:
-        refined_query = query_refiner(get_conversation_string(), choice)
-        answer = get_answer(refined_query)
-        st.write(answer)
+
+
 
 # Plantilla de aviso inicial
 
@@ -196,6 +139,3 @@ PROMPT = PromptTemplate(template=INITIAL_TEMPLATE, input_variables=["summaries",
 
 LLM = OpenAI(temperature=0.3, model_name="gpt-4", max_tokens=2048)
 QA = load_qa_with_sources_chain(llm=LLM, chain_type="stuff", prompt=PROMPT)
-
-
-
