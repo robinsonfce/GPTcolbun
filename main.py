@@ -6,6 +6,10 @@ from dotenv import load_dotenv
 import os
 import streamlit as st
 
+
+donation_link = "https://www.paypal.com/donate/?hosted_button_id=BA335LJJPQM72"
+
+
 # Estilos y definiciones iniciales
 st.markdown("""
     <style>
@@ -40,6 +44,10 @@ with col2:
         """, 
         unsafe_allow_html=True
     )
+    st.markdown(
+    f'<a href="{donation_link}" target="_blank"><img src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" title="Este sitio se mantiene con tu aporte" alt="Donate with PayPal button" /></a>',
+    unsafe_allow_html=True,
+)
 
 
 # Inicialización de mensajes
