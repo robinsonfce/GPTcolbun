@@ -45,7 +45,7 @@ with col2:
         unsafe_allow_html=True
     )
     st.markdown(
-    f'<a href="{donation_link}" target="_blank"><img src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" title="Este sitio se mantiene con tu aporte" alt="Donate with PayPal button" /></a>',
+    f'<a href="{donation_link}" target="_blank"><img src="https://ginesrom.es/wp-content/uploads/2021/03/Invitame-a-un-cafe-paypal-ginesromero.png" title="Este sitio se mantiene con tu aporte" alt="Donate with PayPal button" /></a>',
     unsafe_allow_html=True,
 )
 
