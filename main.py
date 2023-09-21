@@ -93,11 +93,7 @@ if st.session_state.messages[-1]["role"] != "assistant":
                 template = f"A la consulta: \"{prompt}\"; y en base a los documentos referenciados con la pregunta inicial: \"{initial_answer}\". Responder la consulta, sin dar respuestas fuera del contexto"
                 full_query = context + " " + template
                 #return response['choices'][0]['text'].strip()
-                system_msg='Eres un Ingeniero Eléctrico experto en normativas y estándares eléctricos.
-                Tu tarea es proporcionar respuestas detalladas, precisas y con referencias claras a las fuentes, 
-                sin repetir la pregunta en tus respuestas.
-                Tus respuestas deben estar enfocadas solo a los pliegos RIC.
-                Primero responde precisamente lo que se te pregunta y luego agregar un breve comentario. Acota tu respuesta a 100 palabras, salvo que te pidan mas detalles.'
+                system_msg='Eres un Ingeniero Eléctrico experto en normativas y estándares eléctricos. Tu tarea es proporcionar respuestas detalladas, precisas y con referencias claras a las fuentes, sin repetir la pregunta en tus respuestas. Tus respuestas deben estar enfocadas solo a los pliegos RIC. Primero responde precisamente lo que se te pregunta y luego agregar un breve comentario. Acota tu respuesta a 100 palabras, salvo que te pidan mas detalles.'
 
                 # Define the user message
                 user_msg = full_query
