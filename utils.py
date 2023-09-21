@@ -93,7 +93,7 @@ def query_refiner(conversation, query):
 
 def query_refiner(conversation, query):
     response = openai.Completion.create(
-        model="text-davinci-003",
+        model="gpt-3.5-turbo-instruct",
         prompt=f"Dada la consulta del usuario y el historial de la conversación, tu objetivo es formular una pregunta más refinada y específica centrada en el área de normativas eléctricas. Esta pregunta refinada debe ayudarte a obtener la información más relevante de la base de conocimientos para responder de la mejor manera posible. La consulta refinada debe estar en forma de pregunta y no exceder de 2 oraciones.\n\nCONVERSATION LOG: \n{conversation}\n\nQuery: {query}\n\nRefined Query:",
     	temperature=0.3,
         max_tokens=256
@@ -148,5 +148,5 @@ QUESTION: {question}
 
 PROMPT = PromptTemplate(template=INITIAL_TEMPLATE, input_variables=["summaries", "question"])
 
-LLM = OpenAI(temperature=0.3, model_name="gpt-3.5-turbo", max_tokens=512)
+LLM = OpenAI(temperature=0.3, model_name="gpt-3.5-turbo", max_tokens=256)
 QA = load_qa_with_sources_chain(llm=LLM, chain_type="stuff", prompt=PROMPT)
